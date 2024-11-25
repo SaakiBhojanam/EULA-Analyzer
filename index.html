@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EULA Analyzer</title>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-cloud/build/d3.layout.cloud.js"></script>
+  <style>
+    /* General Styling */
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9fafb;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* Header Section */
+    header {
+      background-color: #2563eb;
+      color: #fff;
+      text-align: center;
+      padding: 2rem 0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      font-weight: bold;
+    }
+
+    header p {
+      font-size: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Main Container */
+    main {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Textarea Styling */
+    textarea {
+      width: 100%;
+      height: 150px;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 1rem;
+      resize: none;
+      background-color: #f9fafb;
+      color: #333;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 3px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Buttons */
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      background-color: #1e40af;
+      transform: scale(1.05);
+    }
+
+    /* Output Section */
+    .output {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background-color: #f3f4f6;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .output h3 {
+      margin-top: 0;
+      font-size: 1.8rem;
+      color: #2563eb;
+    }
+
+    .output p {
+      font-size: 1rem;
+      margin: 0.5rem 0;
+    }
+
+    /* Word Cloud Container */
+    #wordCloudContainer {
+      margin: 2rem auto 0;
+      text-align: center;
+    }
+
+    #wordCloud {
+      width: 100%;
+      height: 400px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      margin-top: 3rem;
+      background-color: #2563eb;
+      color: white;
+    }
+
+    footer p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    footer a {
+      color: #93c5fd;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>EULA Analyzer</h1>
+    <p>Understand the key terms, readability, and sentiment of your EULA text</p>
+  </header>
+  <main>
+    <p>Paste your EULA (End User License Agreement) text below to begin analysis:</p>
+    <textarea id="eulaText" placeholder="Paste your EULA text here..."></textarea>
+    <button onclick="analyzeEULA()">Analyze</button>
+    <button onclick="downloadResults()">Download Results</button>
+
+    <div class="output" id="analysisOutput" style="display: none;">
+      <h3>Analysis Results</h3>
+      <p><strong>Word Count:</strong> <span id="wordCount"></span></p>
+      <p><strong>Unique Words:</strong> <span id="uniqueWords"></span></p>
+      <p><strong>Average Readability Score:</strong> <span id="readabilityScore"></span></p>
+      <p><strong>Reading Level:</strong> <span id="readingLevel"></span></p>
+      <p><strong>Estimated Reading Time:</strong> <span id="readingTime"></span></p>
+      <p><strong>Longest Sentence:</strong> <span id="longestSentence"></span></p>
+      <p><strong>Sentiment:</strong> <span id="sentiment"></span></p>
+      <div id="wordCloudContainer">
+        <h4>Word Cloud</h4>
+        <svg id="wordCloud"></svg>
+      </div>
+    </div>
+  </main>
+  <script>
+    function analyzeEULA() {
+      const text = document.getElementById('eulaText').value;
+      const output = document.getElementById('analysisOutput');
+      const wordArray = text.toLowerCase().split(/\s+/).filter(word => word);
+
+      const wordCount = wordArray.length;
+      const uniqueWords = new Set(wordArray).size;
+
+      const sentences = text.split(/[.!?]/).filter(sentence => sentence.trim().length > 0);
+      const avgWordLength = text.replace(/\s+/g, '').length / wordCount;
+      const avgSentenceLength = wordCount / (sentences.length || 1);
+      const readabilityScore = ((avgWordLength + avgSentenceLength) / 2).toFixed(2);
+
+      const readingLevel = 
+        readabilityScore < 5 ? "Elementary" : 
+        readabilityScore < 8 ? "Middle School" :
+        readabilityScore < 12 ? "High School" : "College";
+
+      const readingTime = Math.ceil(wordCount / 200) + " minute(s)";
+      const longestSentence = sentences.reduce((longest, current) => current.length > longest.length ? current : longest, '');
+      
+      const legalTerms = ["license", "warranty", "liability", "termination", "governing law"];
+      const sentiment = legalTerms.some(term => text.includes(term)) ? "Legal" : "Neutral";
+
+      const stopwords = ["i", "me", "my", "we", "you", "your", "our", "the", "and"];
+      const wordFrequency = {};
+      wordArray.forEach(word => {
+        if (!stopwords.includes(word)) {
+          wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+        }
+      });
+
+      const wordCloudData = Object.entries(wordFrequency).map(([word, count]) => ({
+        text: word,
+        size: 10 + count * 5,
+      }));
+
+      generateWordCloud(wordCloudData);
+
+      document.getElementById('wordCount').innerText = wordCount;
+      document.getElementById('uniqueWords').innerText = uniqueWords;
+      document.getElementById('readabilityScore').innerText = readabilityScore;
+      document.getElementById('readingLevel').innerText = readingLevel;
+      document.getElementById('readingTime').innerText = readingTime;
+      document.getElementById('longestSentence').innerText = longestSentence.trim();
+      document.getElementById('sentiment').innerText = sentiment;
+      output.style.display = "block";
+    }
+
+    function generateWordCloud(words) {
+      const svg = d3.select("#wordCloud");
+      svg.selectAll("*").remove();
+
+      const width = 600;
+      const height = 400;
+
+      const layout = d3.layout.cloud()
+        .size([width, height])
+        .words(words)
+        .padding(5)
+        .rotate(() => ~~(Math.random() * 2) * 90)
+        .font("Impact")
+        .fontSize(d => d.size)
+        .on("end", draw);
+
+      layout.start();
+
+      function draw(words) {
+        svg.append("g")
+          .attr("transform", `translate(${width / 2}, ${height / 2})`)
+          .selectAll("text")
+          .data(words)
+          .enter().append("text")
+          .style("font-size", d => `${d.size}px`)
+          .style("font-family", "Impact")
+          .style("fill", () => `hsl(${Math.random() * 360}, 100%, 50%)`)
+          .attr("text-anchor", "middle")
+          .attr("transform", d => `translate(${d.x}, ${d.y}) rotate(${d.rotate})`)
+          .text(d => d.text);
+      }
+    }
+
+    function downloadResults() {
+      const analysis = document.getElementById('analysisOutput').innerText;
+      const blob = new Blob([analysis], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "eula_analysis.txt";
+      a.click();
+    }
+  </script>
+</body>
+</html>
